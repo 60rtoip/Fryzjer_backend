@@ -1,14 +1,30 @@
 <?php
 
-//ini_set('display_errors', 0);
-//error_reporting(E_ALL);
+date_default_timezone_set('Europe/Warsaw');
 
-    
+header("Access-Control-Allow-Origin: *"); // na produkcji ogranicz do domeny frontend
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/error.log');
+error_reporting(E_ALL);
+
+session_start();
+
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+}
+
 $host = "sql310.infinityfree.com";
 $dbname = "if0_39855735_fryzjer";
 $username = "if0_39855735";
 $password = "Pitivv2007";
-
 
 try {
     $pdo = new PDO(
@@ -21,6 +37,8 @@ try {
         ]
     );
 } catch (PDOException $e) {
+    error_log("DB ERROR: " . $e->getMessage());
+
     header("Content-Type: application/json");
     echo json_encode([
         "success" => false,
@@ -28,13 +46,6 @@ try {
         "message" => "Database connection failed"
     ]);
     exit;
-}
-
-
-session_start();
-
-if (empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 
 function apiSuccess(string $message, $data = null): void
@@ -50,6 +61,8 @@ function apiSuccess(string $message, $data = null): void
 
 function apiError(string $code, string $message): void
 {
+    error_log("API ERROR [$code]: $message");
+
     header("Content-Type: application/json");
     echo json_encode([
         "success" => false,
@@ -57,18 +70,4 @@ function apiError(string $code, string $message): void
         "message" => $message
     ]);
     exit;
-}
-
-
-function visitDuration(string $gender): int
-{
-    if ($gender === 'male') {
-        return 60;
-    }
-
-    if ($gender === 'female') {
-        return 120;
-    }
-
-    return 0;
 }
