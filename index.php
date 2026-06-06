@@ -4,7 +4,6 @@ require "config.php";
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta name="csrf" content="<?= $_SESSION['csrf'] ?>">
     <meta charset="UTF-8">
     <title>Fryzjer – Backend Test UI</title>
 
@@ -122,17 +121,11 @@ require "config.php";
 </section>
 
 <script>
-const SERVICES = {
-    male: {
-        cut:   { label: "Hair cut", hours: 0.5 },
-        style: { label: "Styling", hours: 1 }
-    },
-    female: {
-        ends:  { label: "Trim ends", hours: 0.5 },
-        style: { label: "Styling", hours: 1 },
-        color: { label: "Coloring", hours: 2 }
-    }
-};
+const BASE = "https://60rtoip2.fast-page.org/Fryzjer_backend/";
+
+function getCSRF() {
+    return document.querySelector('meta[name="csrf"]').getAttribute('content');
+}
 
 function showMessage(data) {
     const box = document.getElementById("messageBox");
@@ -144,7 +137,7 @@ function showMessage(data) {
 
 /* SESSION */
 function refreshSession() {
-    fetch("auth/me.php", { credentials: "same-origin" })
+    fetch(BASE + "auth/me.php", { credentials: "include" })
         .then(r => r.json())
         .then(res => {
             if (!res.data.logged) {
@@ -161,12 +154,25 @@ function refreshSession() {
             adminSection.style.display =
                 res.data.role === "admin" ? "block" : "none";
 
+            const SERVICES = {
+                male: {
+                    cut: { label: "Hair cut", hours: 0.5 },
+                    style: { label: "Styling", hours: 1 }
+                },
+                female: {
+                    ends: { label: "Trim ends", hours: 0.5 },
+                    style: { label: "Styling", hours: 1 },
+                    color: { label: "Coloring", hours: 2 }
+                }
+            };
+
             const sel = document.getElementById("res_service");
             sel.innerHTML = "";
-            Object.entries(SERVICES[res.data.gender]).forEach(([k,v]) => {
+
+            Object.entries(SERVICES[res.data.gender]).forEach(([k, v]) => {
                 const o = document.createElement("option");
                 o.value = k;
-                o.text  = `${v.label} (${v.hours}h)`;
+                o.text = `${v.label} (${v.hours}h)`;
                 sel.appendChild(o);
             });
         });
@@ -174,108 +180,145 @@ function refreshSession() {
 
 /* AUTH */
 function login() {
-    fetch("auth/login.php", { method:"POST",
-        body:new URLSearchParams({
+    fetch(BASE + "auth/login.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
             email: login_email.value,
-            password: login_password.value
+            password: login_password.value,
+            csrf: getCSRF()
         })
-    }).then(r=>r.json()).then(d=>{
+    }).then(r => r.json()).then(d => {
         showMessage(d);
-        if(d.success) refreshSession();
+        if (d.success) refreshSession();
     });
 }
 
 function logout() {
-    fetch("auth/logout.php",{credentials:"same-origin"})
-        .then(r=>r.json()).then(d=>{
+    fetch(BASE + "auth/logout.php", { credentials: "include" })
+        .then(r => r.json()).then(d => {
             showMessage(d);
             refreshSession();
         });
 }
 
 function register() {
-    fetch("auth/register.php",{method:"POST",
-        body:new URLSearchParams({
+    fetch(BASE + "auth/register.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
             email: reg_email.value,
             password: reg_password.value,
-            gender: reg_gender.value
+            gender: reg_gender.value,
+            csrf: getCSRF()
         })
-    }).then(r=>r.json()).then(showMessage);
+    }).then(r => r.json()).then(showMessage);
 }
 
 /* RESERVATIONS */
 function checkAvailability() {
-    fetch(`reservations/availability.php?date=${avail_date.value}`)
-        .then(r=>r.json())
-        .then(d=>{
+    fetch(BASE + `reservations/availability.php?date=${avail_date.value}`, {
+        credentials: "include"
+    })
+        .then(r => r.json())
+        .then(d => {
             showMessage(d);
-            availability_output.innerText = JSON.stringify(d,null,2);
+            availability_output.innerText = JSON.stringify(d, null, 2);
         });
 }
 
 function reserve() {
-    fetch("reservations/reserve.php",{method:"POST",credentials:"same-origin",
-        body:new URLSearchParams({
+    fetch(BASE + "reservations/reserve.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
             date: res_date.value,
             hour: res_hour.value,
-            service: res_service.value
+            service: res_service.value,
+            csrf: getCSRF()
         })
-    }).then(r=>r.json()).then(showMessage);
+    }).then(r => r.json()).then(showMessage);
 }
 
 function loadReservations() {
-    fetch("reservations/my_reservations.php",{credentials:"same-origin"})
-        .then(r=>r.json())
-        .then(d=>{
-            if(!d.success){showMessage(d);return;}
-            my_reservations.innerText="";
-            cancel_select.innerHTML="";
-            d.data.forEach(r=>{
+    fetch(BASE + "reservations/my_reservations.php", {
+        credentials: "include"
+    })
+        .then(r => r.json())
+        .then(d => {
+            if (!d.success) {
+                showMessage(d);
+                return;
+            }
+
+            my_reservations.innerText = "";
+            cancel_select.innerHTML = "";
+
+            d.data.forEach(r => {
                 my_reservations.innerText +=
                     `${r.id} | ${r.date} ${r.hour} | ${r.email} | ${r.service_type} | ${r.duration}min\n`;
-                const o=document.createElement("option");
-                o.value=r.id;
-                o.text=`${r.date} ${r.hour} | ${r.email}`;
+
+                const o = document.createElement("option");
+                o.value = r.id;
+                o.text = `${r.date} ${r.hour} | ${r.email}`;
                 cancel_select.appendChild(o);
             });
         });
 }
 
 function cancelSelected() {
-    fetch("reservations/cancel_reservation.php",{method:"POST",credentials:"same-origin",
-        body:new URLSearchParams({reservation_id: cancel_select.value})
-    }).then(r=>r.json()).then(d=>{
+    fetch(BASE + "reservations/cancel_reservation.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
+            reservation_id: cancel_select.value,
+            csrf: getCSRF()
+        })
+    }).then(r => r.json()).then(d => {
         showMessage(d);
-        if(d.success) loadReservations();
+        if (d.success) loadReservations();
     });
 }
 
 /* ADMIN */
 function addDayOff() {
-    fetch("admin/admin_days_off.php",{method:"POST",
-        body:new URLSearchParams({date: dayoff_date.value})
-    }).then(r=>r.json()).then(showMessage);
+    fetch(BASE + "admin/admin_days_off.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
+            date: dayoff_date.value,
+            csrf: getCSRF()
+        })
+    }).then(r => r.json()).then(showMessage);
 }
 
 /* PASSWORD */
 function requestPasswordReset() {
-    const email=prompt("Enter your email:");
-    if(!email)return;
-    fetch("password/password_reset_request.php",{method:"POST",
-        body:new URLSearchParams({email})
-    }).then(r=>r.json()).then(showMessage);
+    const email = prompt("Enter your email:");
+    if (!email) return;
+
+    fetch(BASE + "password/password_reset_request.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
+            email,
+            csrf: getCSRF()
+        })
+    }).then(r => r.json()).then(showMessage);
 }
 
 function setNewPassword() {
-    fetch("password/reset_password.php",{method:"POST",
-        body:new URLSearchParams({password:new_password.value})
-    }).then(r=>r.json()).then(d=>{
+    fetch(BASE + "password/reset_password.php", {
+        method: "POST",
+        credentials: "include",
+        body: new URLSearchParams({
+            password: new_password.value,
+            csrf: getCSRF()
+        })
+    }).then(r => r.json()).then(d => {
         showMessage(d);
-        if(d.success) setTimeout(()=>location.reload(),1500);
+        if (d.success) setTimeout(() => location.reload(), 1500);
     });
-}
-function getCSRF() {
-    return document.querySelector('meta[name="csrf"]').getAttribute('content');
 }
 
 refreshSession();
