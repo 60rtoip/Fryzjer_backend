@@ -1,4 +1,4 @@
-#Fryzjer Backend
+Fryzjer Backend
 
 Backend systemu rezerwacji wizyt (PHP + MySQL).
 
