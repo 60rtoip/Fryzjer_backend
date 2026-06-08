@@ -21,10 +21,25 @@ if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 
-$host = "sql310.infinityfree.com";
-$dbname = "if0_39855735_fryzjer";
-$username = "if0_39855735";
-$password = "Pitivv2007";
+// ── Database ────────────────────────────────────────────────────────────────
+$host     = "db";          // Docker service name (docker-compose)
+$dbname   = "fryzjer";
+$username = "fryzjer";
+$password = "fryzjer_password";
+
+// ── Application URL (no trailing slash) ──────────────────────────────────────
+// Base URL of the FRONTEND app — used in email links.
+// Email links will point to Angular routes (e.g. /verify?hash=...) so the
+// user lands on the proper frontend page rather than a raw PHP response.
+// In Docker this should be "http://localhost" (or your domain).
+$app_url = "http://localhost";
+
+// ── SMTP / Email ─────────────────────────────────────────────────────────────
+$smtp_host      = "smtp.gmail.com";
+$smtp_port      = 587;
+$smtp_user      = "testmailpiotrw@gmail.com";
+$smtp_pass      = "VHSADLZNGAZVELEJ"; // Gmail app password
+$smtp_from_name = "Fryzjer";
 
 try {
     $pdo = new PDO(

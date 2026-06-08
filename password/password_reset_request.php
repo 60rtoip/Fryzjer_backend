@@ -38,17 +38,17 @@ $mail = new PHPMailer(true);
 
 try {
     $mail->isSMTP();
-    $mail->Host = "smtp.gmail.com";
+    $mail->Host = $smtp_host;
     $mail->SMTPAuth = true;
-    $mail->Username = "testmailpiotrw@gmail.com";
-    $mail->Password = "VHSADLZNGAZVELEJ";
+    $mail->Username = $smtp_user;
+    $mail->Password = $smtp_pass;
     $mail->SMTPSecure = "tls";
-    $mail->Port = 587;
+    $mail->Port = $smtp_port;
 
-    $mail->setFrom("testmailpiotrw@gmail.com", "Fryzjer");
+    $mail->setFrom($smtp_user, $smtp_from_name);
     $mail->addAddress($email);
 
-    $link = "https://60rtoip2.fast-page.org/Fryzjer_backend/password/verify_reset.php?hash=" . $resetHash;
+    $link = $app_url . "/reset-password?hash=" . $resetHash;
 
     $mail->Subject = "Password reset";
     $mail->Body =

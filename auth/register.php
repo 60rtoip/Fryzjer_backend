@@ -45,17 +45,17 @@ $mail = new PHPMailer(true);
 
 try {
     $mail->isSMTP();
-    $mail->Host = "smtp.gmail.com";
+    $mail->Host = $smtp_host;
     $mail->SMTPAuth = true;
-    $mail->Username = "testmailpiotrw@gmail.com";
-    $mail->Password = "VHSADLZNGAZVELEJ"; // app password
+    $mail->Username = $smtp_user;
+    $mail->Password = $smtp_pass;
     $mail->SMTPSecure = "tls";
-    $mail->Port = 587;
+    $mail->Port = $smtp_port;
 
-    $mail->setFrom("testmailpiotrw@gmail.com", "Fryzjer");
+    $mail->setFrom($smtp_user, $smtp_from_name);
     $mail->addAddress($email);
 
-    $link = "https://60rtoip2.fast-page.org/Fryzjer_backend/verify.php?hash=" . $verify_hash;
+    $link = $app_url . "/verify?hash=" . $verify_hash;
 
     $mail->Subject = "Activate your account";
     $mail->Body = 

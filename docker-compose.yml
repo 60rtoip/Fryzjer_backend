@@ -1,0 +1,46 @@
+services:
+
+  # ── MySQL Database ────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: fryzjer_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: fryzjer
+      MYSQL_USER: fryzjer
+      MYSQL_PASSWORD: fryzjer_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./if0_39855735_fryzjer.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fryzjer", "-pfryzjer_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── PHP/Apache Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fryzjer_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Angular Frontend (Nginx) ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: https://github.com/Hosokava/fryzjer.git#main:fryzjer
+      dockerfile: Dockerfile
+    container_name: fryzjer_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
